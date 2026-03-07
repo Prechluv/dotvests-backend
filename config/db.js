@@ -5,6 +5,13 @@ const db = new Database(path.join(__dirname, '../db/dotvests.db'));
 
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
+// Add reset token columns if they don't exist
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN reset_token TEXT`);
+} catch(e) {}
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN reset_token_expiry INTEGER`);
+} catch(e) {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (
