@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DotVests API Documentation</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { background: #0a0a0a; color: #e0e0e0; font-family: 'Segoe UI', sans-serif; }
+    .header { background: linear-gradient(135deg, #1a1a2e, #16213e); padding: 40px 20px; text-align: center; border-bottom: 2px solid #D4AF37; }
+    .header h1 { color: #D4AF37; font-size: 2em; margin-bottom: 10px; }
+    .header p { color: #aaa; font-size: 1em; }
+    .base-url { background: #1a1a1a; border: 1px solid #D4AF37; border-radius: 8px; padding: 15px 20px; margin: 20px; text-align: center; }
+    .base-url span { color: #D4AF37; font-size: 1.1em; font-weight: bold; }
+    .section { margin: 20px; }
+    .section-title { color: #D4AF37; font-size: 1.3em; font-weight: bold; padding: 10px 0; border-bottom: 1px solid #333; margin-bottom: 15px; }
+    .endpoint { background: #111; border: 1px solid #222; border-radius: 8px; margin-bottom: 15px; overflow: hidden; }
+    .endpoint-header { padding: 15px; display: flex; align-items: center; gap: 10px; }
+    .method { padding: 4px 12px; border-radius: 4px; font-weight: bold; font-size: 0.85em; min-width: 60px; text-align: center; }
+    .GET { background: #0d4f2e; color: #00C076; }
+    .POST { background: #1a3a5c; color: #4da6ff; }
+    .PATCH { background: #4a2c00; color: #ff9900; }
+    .DELETE { background: #4a0000; color: #ff4444; }
+    .endpoint-path { color: #fff; font-family: monospace; font-size: 0.95em; }
+    .endpoint-desc { color: #888; font-size: 0.85em; margin-left: auto; }
+    .lock { color: #D4AF37; font-size: 0.8em; }
+    .endpoint-body { padding: 0 15px 15px; border-top: 1px solid #1a1a1a; }
+    .endpoint-body h4 { color: #aaa; font-size: 0.8em; margin: 10px 0 5px; text-transform: uppercase; }
+    .code { background: #0a0a0a; border: 1px solid #333; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 0.82em; color: #00C076; overflow-x: auto; white-space: pre; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>DotVests API Documentation</h1>
+  <p>Africa's First Blockchain-Powered Tokenized Stock Exchange</p>
+  <p style="margin-top:8px;color:#D4AF37;">Version 1.0.0 — Built from Ogoni Land</p>
+</div>
+
+<div class="base-url">
+  <span>Base URL: https://dotvests-backend.onrender.com</span>
+</div>
+
+<div class="section">
+  <div class="section-title">🔐 Authentication</div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/api/auth/register</span>
+      <span class="endpoint-desc">Create new account</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Request Body</h4>
+      <div class="code">{"full_name": "Deemene Precious", "email": "user@dotvests.com", "phone": "09066818337", "password": "yourpassword"}</div>
+      <h4>Response</h4>
+      <div class="code">{"success": true, "message": "Account created successfully", "token": "eyJ...", "user": {"id": 1, "full_name": "Deemene Precious", "email": "user@dotvests.com"}}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/api/auth/login</span>
+      <span class="endpoint-desc">Login to account</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Request Body</h4>
+      <div class="code">{"email": "user@dotvests.com", "password": "yourpassword"}</div>
+      <h4>Response</h4>
+      <div class="code">{"success": true, "message": "Login successful", "token": "eyJ...", "user": {"id": 1, "full_name": "Deemene Precious", "kyc_status": "unverified"}}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/auth/me</span>
+      <span class="endpoint-desc">Get current user</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Headers</h4>
+      <div class="code">Authorization: Bearer eyJ...</div>
+      <h4>Response</h4>
+      <div class="code">{"success": true, "user": {"id": 1, "full_name": "Deemene Precious", "email": "user@dotvests.com", "kyc_status": "unverified", "role": "user"}}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">👤 User</div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/user/profile</span>
+      <span class="endpoint-desc">Get my profile</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Response</h4>
+      <div class="code">{"success": true, "user": {"id": 1, "full_name": "Deemene Precious", "email": "...", "phone": "...", "kyc_status": "unverified"}}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/api/user/profile</span>
+      <span class="endpoint-desc">Update profile</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Request Body</h4>
+      <div class="code">{"full_name": "New Name", "phone": "08012345678"}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/api/user/kyc</span>
+      <span class="endpoint-desc">Submit KYC</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Request Body</h4>
+      <div class="code">{"bvn": "12345678901", "nin": "12345678901"}</div>
+      <h4>Response</h4>
+      <div class="code">{"success": true, "message": "KYC submitted successfully. Under review within 24-48 hours."}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/user/notifications</span>
+      <span class="endpoint-desc">Get notifications</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Response</h4>
+      <div class="code">{"success": true, "unread_count": 3, "notifications": [{"id": 1, "title": "Deposit Successful", "message": "...", "is_read": 0}]}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/api/user/change-password</span>
+      <span class="endpoint-desc">Change password</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Request Body</h4>
+      <div class="code">{"current_password": "oldpass", "new_password": "newpass"}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">📈 Stocks & Markets</div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/stocks</span>
+      <span class="endpoint-desc">Get all stocks</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Response</h4>
+      <div class="code">{"success": true, "count": 4, "stocks": [{"id": 1, "name": "DotVest", "ticker": "DTV", "price": 341.25, "sector": "Financial Technology"}]}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/stocks/:ticker</span>
+      <span class="endpoint-desc">Get single stock</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Example</h4>
+      <div class="code">/api/stocks/DTV</div>
+      <h4>Response</h4>
+      <div class="code">{"success": true, "stock": {"id": 1, "name": "DotVest", "ticker": "DTV", "price": 341.25, "previous_price": 228.05}}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/api/stocks/watchlist/add</span>
+      <span class="endpoint-desc">Add to watchlist</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Request Body</h4>
+      <div class="code">{"stock_id": 1}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/stocks/watchlist/me</span>
+      <span class="endpoint-desc">Get my watchlist</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Response</h4>
+      <div class="code">{"success": true, "count": 2, "watchlist": [{"id": 1, "name": "DotVest", "ticker": "DTV", "price": 341.25}]}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method DELETE">DELETE</span>
+      <span class="endpoint-path">/api/stocks/watchlist/:stock_id</span>
+      <span class="endpoint-desc">Remove from watchlist</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Example</h4>
+      <div class="code">/api/stocks/watchlist/1</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">💰 Wallet</div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/wallet</span>
+      <span class="endpoint-desc">Get wallet balance</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Response</h4>
+      <div class="code">{"success": true, "wallet": {"id": 1, "user_id": 1, "balance": 50000.00, "currency": "NGN"}}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/api/wallet/deposit</span>
+      <span class="endpoint-desc">Deposit funds</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Request Body</h4>
+      <div class="code">{"amount": 50000}</div>
+      <h4>Response</h4>
+      <div class="code">{"success": true, "message": "₦50,000 deposited successfully", "new_balance": 50000, "reference": "DEP-1234567890-1"}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/api/wallet/withdraw</span>
+      <span class="endpoint-desc">Withdraw funds</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Request Body</h4>
+      <div class="code">{"amount": 10000}</div>
+      <h4>Response</h4>
+      <div class="code">{"success": true, "message": "₦10,000 withdrawal successful", "new_balance": 40000, "reference": "WDR-1234567890-1"}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/wallet/transactions</span>
+      <span class="endpoint-desc">Get transaction history</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Response</h4>
+      <div class="code">{"success": true, "count": 5, "transactions": [{"id": 1, "type": "deposit", "amount": 50000, "description": "Wallet deposit", "reference": "DEP-..."}]}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">⚡ Trading — Orders</div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method POST">POST</span>
+      <span class="endpoint-path">/api/orders/place</span>
+      <span class="endpoint-desc">Place buy or sell order</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Request Body — Buy</h4>
+      <div class="code">{"stock_id": 1, "type": "buy", "quantity": 10, "price": 341.25}</div>
+      <h4>Request Body — Sell</h4>
+      <div class="code">{"stock_id": 1, "type": "sell", "quantity": 5, "price": 341.25}</div>
+      <h4>Response</h4>
+      <div class="code">{"success": true, "message": "BUY order executed successfully", "order": {"id": 1, "stock": "DTV", "type": "buy", "quantity": 10, "price": 341.25, "total": 3412.50}}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/orders/my-orders</span>
+      <span class="endpoint-desc">Get my order history</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Response</h4>
+      <div class="code">{"success": true, "count": 3, "orders": [{"id": 1, "stock_name": "DotVest", "ticker": "DTV", "type": "buy", "quantity": 10, "total": 3412.50}]}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">📊 Portfolio</div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/portfolio</span>
+      <span class="endpoint-desc">Get my portfolio</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Response</h4>
+      <div class="code">{"success": true, "summary": {"total_current_value": 15000, "total_profit_loss": 2000, "total_profit_loss_percent": "15.38", "number_of_holdings": 2}, "holdings": [{"stock_name": "DotVest", "ticker": "DTV", "quantity": 10, "current_price": 341.25, "profit_loss": 1131.50}]}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/portfolio/summary/performance</span>
+      <span class="endpoint-desc">Get performance summary</span>
+      <span class="lock">🔒 Protected</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Response</h4>
+      <div class="code">{"success": true, "performance": {"wallet_balance": 40000, "portfolio_value": 15000, "total_assets": 55000, "total_trades": 3, "total_invested": 12000}}</div>
+    </div>
+  </div>
+</div>
+
+<div class="section">
+  <div class="section-title">🛡️ Admin — Protected Routes</div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/admin/stats</span>
+      <span class="endpoint-desc">Platform statistics</span>
+      <span class="lock">🔒 Admin Only</span>
+    </div>
+    <div class="endpoint-body">
+      <h4>Response</h4>
+      <div class="code">{"success": true, "stats": {"users": {"total": 100, "verified": 45, "pending_kyc": 12}, "trading": {"total_orders": 500, "total_buy_volume": 2500000}, "financial": {"total_deposits": 5000000, "total_wallet_balance": 3200000}}}</div>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method GET">GET</span>
+      <span class="endpoint-path">/api/admin/users</span>
+      <span class="endpoint-desc">Get all users</span>
+      <span class="lock">🔒 Admin Only</span>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/api/admin/kyc/approve/:id</span>
+      <span class="endpoint-desc">Approve KYC</span>
+      <span class="lock">🔒 Admin Only</span>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/api/admin/kyc/reject/:id</span>
+      <span class="endpoint-desc">Reject KYC</span>
+      <span class="lock">🔒 Admin Only</span>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/api/admin/users/suspend/:id</span>
+      <span class="endpoint-desc">Suspend user</span>
+      <span class="lock">🔒 Admin Only</span>
+    </div>
+  </div>
+
+  <div class="endpoint">
+    <div class="endpoint-header">
+      <span class="method PATCH">PATCH</span>
+      <span class="endpoint-path">/api/admin/users/activate/:id</span>
+      <span class="endpoint-desc">Activate user</span>
+      <span class="lock">🔒 Admin Only</span>
+    </div>
+  </div>
+</div>
+
+<div style="text-align:center;padding:40px 20px;color:#555;border-top:1px solid #222;margin-top:20px;">
+  <p style="color:#D4AF37;font-weight:bold;">DotVests Technologies Limited</p>
+  <p style="margin-top:5px;">Built from Ogoni Land — For Africa — Version 1.0.0</p>
+  <p style="margin-top:5px;">www.dotvests.com</p>
+</div>
+
+</body>
+</html>
