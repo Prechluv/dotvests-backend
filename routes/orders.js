@@ -2,9 +2,10 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const { protect } = require('../middleware/auth');
+const { mintTokens, burnTokens } = require('../config/blockchain');
 
 // PLACE ORDER (BUY OR SELL)
-router.post('/place', protect, (req, res) => {
+router.post('/place', protect, async (req, res) => {
   try {
     const { stock_id, type, quantity, price } = req.body;
 
@@ -38,7 +39,9 @@ router.post('/place', protect, (req, res) => {
       'SELECT * FROM wallets WHERE user_id = ?'
     ).get(req.user.id);
 
-    // BUY ORDER — check wallet balance
+    let blockchainTx = null;
+
+    // BUY ORDER
     if (type === 'buy') {
       if (wallet.balance < total) {
         return res.status(400).json({
@@ -78,6 +81,17 @@ router.post('/place', protect, (req, res) => {
         `).run(req.user.id, stock_id, quantity, price);
       }
 
+      // Mint tokens on ZetaChain
+      const platformWallet = process.env.PLATFORM_WALLET;
+      if (platformWallet) {
+        blockchainTx = await mintTokens(stock.ticker, platformWallet, quantity);
+        if (blockchainTx.success) {
+          console.log(`Minted ${quantity} ${stock.ticker} tokens. TX: ${blockchainTx.txHash}`);
+        } else {
+          console.error(`Mint failed for ${stock.ticker}:`, blockchainTx.error);
+        }
+      }
+
       // Notify user
       db.prepare(`
         INSERT INTO notifications (user_id, title, message)
@@ -85,7 +99,7 @@ router.post('/place', protect, (req, res) => {
       `).run(req.user.id, `You bought ${quantity} units of ${stock.ticker} at ₦${price.toLocaleString()} each`);
     }
 
-    // SELL ORDER — check portfolio holdings
+    // SELL ORDER
     if (type === 'sell') {
       const holding = db.prepare(
         'SELECT * FROM portfolio WHERE user_id = ? AND stock_id = ?'
@@ -123,6 +137,17 @@ router.post('/place', protect, (req, res) => {
         `).run(newQuantity, req.user.id, stock_id);
       }
 
+      // Burn tokens on ZetaChain
+      const platformWallet = process.env.PLATFORM_WALLET;
+      if (platformWallet) {
+        blockchainTx = await burnTokens(stock.ticker, platformWallet, quantity);
+        if (blockchainTx.success) {
+          console.log(`Burned ${quantity} ${stock.ticker} tokens. TX: ${blockchainTx.txHash}`);
+        } else {
+          console.error(`Burn failed for ${stock.ticker}:`, blockchainTx.error);
+        }
+      }
+
       // Notify user
       db.prepare(`
         INSERT INTO notifications (user_id, title, message)
@@ -145,7 +170,8 @@ router.post('/place', protect, (req, res) => {
         type,
         quantity,
         price,
-        total
+        total,
+        blockchain: blockchainTx
       }
     });
 
@@ -215,4 +241,4 @@ router.get('/:id', protect, (req, res) => {
   }
 });
 
-module.exports = router
+module.exports = router;
