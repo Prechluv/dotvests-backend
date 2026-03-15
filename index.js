@@ -1,3 +1,4 @@
+```javascript
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -15,6 +16,7 @@ const orderRoutes = require('./routes/orders');
 const walletRoutes = require('./routes/wallet');
 const portfolioRoutes = require('./routes/portfolio');
 const adminRoutes = require('./routes/admin');
+const paymentRoutes = require('./routes/payment');
 
 const app = express();
 
@@ -52,6 +54,7 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/wallet', walletRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // Health check
 app.get('/', (req, res) => {
@@ -67,7 +70,8 @@ app.get('/', (req, res) => {
       orders: '/api/orders',
       wallet: '/api/wallet',
       portfolio: '/api/portfolio',
-      admin: '/api/admin'
+      admin: '/api/admin',
+      payment: '/api/payment'
     }
   });
 });
@@ -86,3 +90,4 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`DotVests backend running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV}`);
 });
+```
