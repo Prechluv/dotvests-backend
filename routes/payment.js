@@ -1,11 +1,9 @@
-```javascript
 const express = require('express');
 const router = express.Router();
 const axios = require('axios');
 const db = require('../config/db');
 const { protect } = require('../middleware/auth');
 
-// INITIALIZE PAYMENT (user initiates deposit)
 router.post('/initialize', protect, async (req, res) => {
   try {
     const { amount } = req.body;
@@ -13,7 +11,7 @@ router.post('/initialize', protect, async (req, res) => {
     if (!amount || amount < 100) {
       return res.status(400).json({
         success: false,
-        message: 'Minimum deposit is ₦100'
+        message: 'Minimum deposit is N100'
       });
     }
 
@@ -23,7 +21,7 @@ router.post('/initialize', protect, async (req, res) => {
       'https://api.paystack.co/transaction/initialize',
       {
         email: user.email,
-        amount: amount * 100, // Paystack uses kobo
+        amount: amount * 100,
         metadata: {
           user_id: req.user.id,
           full_name: user.full_name
@@ -31,7 +29,7 @@ router.post('/initialize', protect, async (req, res) => {
       },
       {
         headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`,
+          Authorization: 'Bearer ' + process.env.PAYSTACK_SECRET_KEY,
           'Content-Type': 'application/json'
         }
       }
@@ -39,11 +37,9 @@ router.post('/initialize', protect, async (req, res) => {
 
     const { authorization_url, access_code, reference } = response.data.data;
 
-    // Store pending transaction
-    db.prepare(`
-      INSERT INTO transactions (user_id, type, amount, description, reference, status)
-      VALUES (?, 'deposit', ?, 'Wallet deposit via Paystack', ?, 'pending')
-    `).run(req.user.id, amount, reference);
+    db.prepare(
+      'INSERT INTO transactions (user_id, type, amount, description, reference, status) VALUES (?, \'deposit\', ?, \'Wallet deposit via Paystack\', ?, \'pending\')'
+    ).run(req.user.id, amount, reference);
 
     return res.status(200).json({
       success: true,
@@ -65,16 +61,15 @@ router.post('/initialize', protect, async (req, res) => {
   }
 });
 
-// VERIFY PAYMENT (after user pays)
 router.get('/verify/:reference', protect, async (req, res) => {
   try {
     const { reference } = req.params;
 
     const response = await axios.get(
-      `https://api.paystack.co/transaction/verify/${reference}`,
+      'https://api.paystack.co/transaction/verify/' + reference,
       {
         headers: {
-          Authorization: `Bearer ${process.env.PAYSTACK_SECRET_KEY}`
+          Authorization: 'Bearer ' + process.env.PAYSTACK_SECRET_KEY
         }
       }
     );
@@ -88,7 +83,6 @@ router.get('/verify/:reference', protect, async (req, res) => {
       });
     }
 
-    // Check if already processed
     const existing = db.prepare(
       'SELECT * FROM transactions WHERE reference = ? AND status = ?'
     ).get(reference, 'completed');
@@ -102,7 +96,6 @@ router.get('/verify/:reference', protect, async (req, res) => {
 
     const amountInNaira = amount / 100;
 
-    // Credit wallet
     const wallet = db.prepare(
       'SELECT * FROM wallets WHERE user_id = ?'
     ).get(req.user.id);
@@ -111,20 +104,17 @@ router.get('/verify/:reference', protect, async (req, res) => {
       'UPDATE wallets SET balance = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?'
     ).run(wallet.balance + amountInNaira, req.user.id);
 
-    // Update transaction status
     db.prepare(
       'UPDATE transactions SET status = ? WHERE reference = ?'
     ).run('completed', reference);
 
-    // Notify user
-    db.prepare(`
-      INSERT INTO notifications (user_id, title, message)
-      VALUES (?, 'Deposit Successful', ?)
-    `).run(req.user.id, `₦${amountInNaira.toLocaleString()} has been added to your DotVests wallet`);
+    db.prepare(
+      'INSERT INTO notifications (user_id, title, message) VALUES (?, \'Deposit Successful\', ?)'
+    ).run(req.user.id, amountInNaira + ' has been added to your DotVests wallet');
 
     return res.status(200).json({
       success: true,
-      message: `₦${amountInNaira.toLocaleString()} deposited successfully`,
+      message: amountInNaira + ' deposited successfully',
       new_balance: wallet.balance + amountInNaira
     });
 
@@ -137,7 +127,6 @@ router.get('/verify/:reference', protect, async (req, res) => {
   }
 });
 
-// PAYSTACK WEBHOOK (Paystack calls this automatically after payment)
 router.post('/webhook', async (req, res) => {
   try {
     const secret = process.env.PAYSTACK_SECRET_KEY;
@@ -175,10 +164,9 @@ router.post('/webhook', async (req, res) => {
             'UPDATE transactions SET status = ? WHERE reference = ?'
           ).run('completed', reference);
 
-          db.prepare(`
-            INSERT INTO notifications (user_id, title, message)
-            VALUES (?, 'Deposit Successful', ?)
-          `).run(user_id, `₦${amountInNaira.toLocaleString()} has been added to your DotVests wallet`);
+          db.prepare(
+            'INSERT INTO notifications (user_id, title, message) VALUES (?, \'Deposit Successful\', ?)'
+          ).run(user_id, amountInNaira + ' has been added to your DotVests wallet');
         }
       }
     }
@@ -191,4 +179,3 @@ router.post('/webhook', async (req, res) => {
 });
 
 module.exports = router;
-```
