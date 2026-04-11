@@ -38,10 +38,17 @@ router.patch('/profile', protect, (req, res) => {
   try {
     const { full_name, phone } = req.body;
 
+    if (!full_name || full_name.trim() === '') {
+      return res.status(400).json({
+        success: false,
+        message: 'Full name is required and cannot be empty'
+      });
+    }
+
     db.prepare(`
       UPDATE users SET full_name = ?, phone = ?
       WHERE id = ?
-    `).run(full_name, phone, req.user.id);
+    `).run(full_name.trim(), phone, req.user.id);
 
     return res.status(200).json({
       success: true,

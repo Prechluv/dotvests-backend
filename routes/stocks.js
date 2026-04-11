@@ -26,34 +26,6 @@ router.get('/', (req, res) => {
   }
 });
 
-// GET SINGLE STOCK
-router.get('/:ticker', (req, res) => {
-  try {
-    const stock = db.prepare(`
-      SELECT * FROM stocks WHERE ticker = ? AND is_active = 1
-    `).get(req.params.ticker.toUpperCase());
-
-    if (!stock) {
-      return res.status(404).json({
-        success: false,
-        message: 'Stock not found'
-      });
-    }
-
-    return res.status(200).json({
-      success: true,
-      stock
-    });
-
-  } catch (error) {
-    return res.status(500).json({
-      success: false,
-      message: 'Could not fetch stock',
-      error: error.message
-    });
-  }
-});
-
 // ADD TO WATCHLIST
 router.post('/watchlist/add', protect, (req, res) => {
   try {
@@ -140,6 +112,34 @@ router.delete('/watchlist/:stock_id', protect, (req, res) => {
     return res.status(500).json({
       success: false,
       message: 'Could not remove from watchlist',
+      error: error.message
+    });
+  }
+});
+
+// GET SINGLE STOCK (must be after watchlist routes to avoid pattern matching)
+router.get('/:ticker', (req, res) => {
+  try {
+    const stock = db.prepare(`
+      SELECT * FROM stocks WHERE ticker = ? AND is_active = 1
+    `).get(req.params.ticker.toUpperCase());
+
+    if (!stock) {
+      return res.status(404).json({
+        success: false,
+        message: 'Stock not found'
+      });
+    }
+
+    return res.status(200).json({
+      success: true,
+      stock
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Could not fetch stock',
       error: error.message
     });
   }

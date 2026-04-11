@@ -110,11 +110,11 @@ router.get('/verify/:reference', protect, async (req, res) => {
 
     db.prepare(
       'INSERT INTO notifications (user_id, title, message) VALUES (?, \'Deposit Successful\', ?)'
-    ).run(req.user.id, amountInNaira + ' has been added to your DotVests wallet');
+    ).run(req.user.id, `₦${amountInNaira.toLocaleString()} has been added to your DotVests wallet`);
 
     return res.status(200).json({
       success: true,
-      message: amountInNaira + ' deposited successfully',
+      message: `₦${amountInNaira.toLocaleString()} deposited successfully`,
       new_balance: wallet.balance + amountInNaira
     });
 
