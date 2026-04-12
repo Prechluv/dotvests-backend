@@ -109,6 +109,17 @@ router.patch('/kyc/reject/:id', protect, adminOnly, (req, res) => {
   try {
     const { reason } = req.body;
 
+    const user = db.prepare(
+      'SELECT * FROM users WHERE id = ?'
+    ).get(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
     db.prepare(
       'UPDATE users SET kyc_status = "rejected" WHERE id = ?'
     ).run(req.params.id);
@@ -161,6 +172,17 @@ router.patch('/users/suspend/:id', protect, adminOnly, (req, res) => {
 // ACTIVATE USER
 router.patch('/users/activate/:id', protect, adminOnly, (req, res) => {
   try {
+    const user = db.prepare(
+      'SELECT * FROM users WHERE id = ?'
+    ).get(req.params.id);
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'User not found'
+      });
+    }
+
     db.prepare(
       'UPDATE users SET account_status = "active" WHERE id = ?'
     ).run(req.params.id);

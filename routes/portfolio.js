@@ -120,15 +120,19 @@ router.get('/summary/performance', protect, (req, res) => {
       WHERE p.user_id = ?
     `).get(req.user.id);
 
+    const walletBalance = wallet ? parseFloat(wallet.balance) : 0;
+    const portfolioValue = holdings.portfolio_value ? parseFloat(holdings.portfolio_value) : 0;
+    const totalAssets = walletBalance + portfolioValue;
+
     return res.status(200).json({
       success: true,
       performance: {
-        wallet_balance: wallet ? wallet.balance : 0,
-        portfolio_value: holdings.portfolio_value || 0,
-        total_assets: (wallet ? wallet.balance : 0) + (holdings.portfolio_value || 0),
+        wallet_balance: parseFloat(walletBalance.toFixed(2)),
+        portfolio_value: parseFloat(portfolioValue.toFixed(2)),
+        total_assets: parseFloat(totalAssets.toFixed(2)),
         total_trades: totalTrades.count,
-        total_invested: totalBought.total || 0,
-        total_from_sales: totalSold.total || 0
+        total_invested: totalBought.total ? parseFloat((totalBought.total).toFixed(2)) : 0,
+        total_from_sales: totalSold.total ? parseFloat((totalSold.total).toFixed(2)) : 0
       }
     });
 
