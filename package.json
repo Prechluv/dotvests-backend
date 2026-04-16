@@ -1,13 +1,17 @@
 {
-  "name": "nodejs",
+  "name": "dotvests-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "DotVests - Africa's First Blockchain-Powered Tokenized Stock Exchange",
   "main": "index.js",
+  "engines": {
+    "node": "20.x"
+  },
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["stocks", "trading", "blockchain", "fintech"],
+  "author": "Adeleke Sherifdeen Adeboye",
   "license": "ISC",
   "dependencies": {
     "@sendgrid/mail": "^8.1.6",
