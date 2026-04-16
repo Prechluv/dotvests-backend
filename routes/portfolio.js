@@ -102,11 +102,11 @@ router.get('/summary/performance', protect, (req, res) => {
     ).get(req.user.id);
 
     const totalBought = db.prepare(
-      'SELECT SUM(total) as total FROM orders WHERE user_id = ? AND type = "buy"'
+      "SELECT SUM(total) as total FROM orders WHERE user_id = ? AND type = 'buy'"
     ).get(req.user.id);
 
     const totalSold = db.prepare(
-      'SELECT SUM(total) as total FROM orders WHERE user_id = ? AND type = "sell"'
+      "SELECT SUM(total) as total FROM orders WHERE user_id = ? AND type = 'sell'"
     ).get(req.user.id);
 
     const wallet = db.prepare(
