@@ -7,8 +7,9 @@ const { protect } = require('../middleware/auth');
 router.get('/profile', protect, (req, res) => {
   try {
     const user = db.prepare(`
-      SELECT id, full_name, email, phone, bvn, nin, 
-      kyc_status, account_status, role, created_at 
+      SELECT id, full_name, email, phone, bvn, nin,
+      profile_image, date_of_birth, address,
+      kyc_status, account_status, role, created_at
       FROM users WHERE id = ?
     `).get(req.user.id);
 
@@ -36,7 +37,7 @@ router.get('/profile', protect, (req, res) => {
 // UPDATE PROFILE
 router.patch('/profile', protect, (req, res) => {
   try {
-    const { full_name, phone } = req.body;
+    const { full_name, phone, profile_image, date_of_birth, address } = req.body;
 
     if (!full_name || full_name.trim() === '') {
       return res.status(400).json({
@@ -46,13 +47,26 @@ router.patch('/profile', protect, (req, res) => {
     }
 
     db.prepare(`
-      UPDATE users SET full_name = ?, phone = ?
+      UPDATE users SET
+        full_name = ?,
+        phone = ?,
+        profile_image = ?,
+        date_of_birth = ?,
+        address = ?
       WHERE id = ?
-    `).run(full_name.trim(), phone, req.user.id);
+    `).run(full_name.trim(), phone, profile_image, date_of_birth, address, req.user.id);
+
+    const updatedUser = db.prepare(`
+      SELECT id, full_name, email, phone, bvn, nin,
+      profile_image, date_of_birth, address,
+      kyc_status, account_status, role, created_at
+      FROM users WHERE id = ?
+    `).get(req.user.id);
 
     return res.status(200).json({
       success: true,
-      message: 'Profile updated successfully'
+      message: 'Profile updated successfully',
+      user: updatedUser
     });
 
   } catch (error) {
@@ -67,12 +81,19 @@ router.patch('/profile', protect, (req, res) => {
 // SUBMIT KYC
 router.post('/kyc', protect, (req, res) => {
   try {
-    const { bvn, nin } = req.body;
+    const { bvn, nin, document_type, document_number } = req.body;
 
     if (!bvn || !nin) {
       return res.status(400).json({
         success: false,
         message: 'BVN and NIN are required'
+      });
+    }
+
+    if (!document_type || !document_number) {
+      return res.status(400).json({
+        success: false,
+        message: 'Document type and number are required'
       });
     }
 
@@ -95,11 +116,12 @@ router.post('/kyc', protect, (req, res) => {
     db.prepare(`
       INSERT INTO notifications (user_id, title, message)
       VALUES (?, 'KYC Submitted', ?)
-    `).run(req.user.id, 'Your KYC documents have been submitted and are under review. This usually takes 24-48 hours.');
+    `).run(req.user.id, `Your KYC documents (${document_type}: ${document_number}) have been submitted and are under review. This usually takes 24-48 hours.`);
 
     return res.status(200).json({
       success: true,
-      message: 'KYC submitted successfully. Under review within 24-48 hours.'
+      message: 'KYC submitted successfully. Under review within 24-48 hours.',
+      kyc_status: 'pending'
     });
 
   } catch (error) {
