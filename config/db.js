@@ -5,13 +5,34 @@ const db = new Database(path.join(__dirname, '../db/dotvests.db'));
 
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
-// Add reset token columns if they don't exist
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN reset_token TEXT`);
-} catch(e) {}
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN reset_token_expiry INTEGER`);
-} catch(e) {}
+
+// Add missing columns to users table
+try { db.exec(`ALTER TABLE users ADD COLUMN reset_token TEXT`); } catch(e) {}
+try { db.exec(`ALTER TABLE users ADD COLUMN reset_token_expiry INTEGER`); } catch(e) {}
+try { db.exec(`ALTER TABLE users ADD COLUMN profile_image TEXT`); } catch(e) {}
+try { db.exec(`ALTER TABLE users ADD COLUMN date_of_birth TEXT`); } catch(e) {}
+try { db.exec(`ALTER TABLE users ADD COLUMN address TEXT`); } catch(e) {}
+
+// Add missing columns to wallets table
+try { db.exec(`ALTER TABLE wallets ADD COLUMN account_number TEXT`); } catch(e) {}
+try { db.exec(`ALTER TABLE wallets ADD COLUMN bank_name TEXT`); } catch(e) {}
+
+// Add missing columns to stocks table
+try { db.exec(`ALTER TABLE stocks ADD COLUMN high_52w REAL`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN low_52w REAL`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN market_cap TEXT`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN industry TEXT`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN pe_ratio REAL`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN eps REAL`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN dividend_yield REAL`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN volume TEXT`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN average_volume TEXT`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN beta REAL`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN shares_outstanding INTEGER`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN exchange TEXT DEFAULT 'NGX'`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN risk_level TEXT DEFAULT 'medium'`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN min_investment REAL DEFAULT 50000`); } catch(e) {}
+try { db.exec(`ALTER TABLE stocks ADD COLUMN expected_apy REAL`); } catch(e) {}
 
 db.exec(`
   CREATE TABLE IF NOT EXISTS users (

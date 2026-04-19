@@ -6,10 +6,25 @@ const { protect, adminOnly } = require('../middleware/auth');
 // GET ALL STOCKS
 router.get('/', (req, res) => {
   try {
-    const stocks = db.prepare(`
-      SELECT * FROM stocks WHERE is_active = 1
-      ORDER BY name ASC
-    `).all();
+    const { search, sector, limit = 50, offset = 0 } = req.query;
+
+    let query = `SELECT * FROM stocks WHERE is_active = 1`;
+    const params = [];
+
+    if (search) {
+      query += ` AND (name LIKE ? OR ticker LIKE ?)`;
+      params.push(`%${search}%`, `%${search}%`);
+    }
+
+    if (sector) {
+      query += ` AND sector = ?`;
+      params.push(sector);
+    }
+
+    query += ` ORDER BY name ASC LIMIT ? OFFSET ?`;
+    params.push(parseInt(limit), parseInt(offset));
+
+    const stocks = db.prepare(query).all(...params);
 
     return res.status(200).json({
       success: true,
@@ -117,11 +132,60 @@ router.delete('/watchlist/:stock_id', protect, (req, res) => {
   }
 });
 
+// GET TRENDING STOCKS
+router.get('/trending/list', (req, res) => {
+  try {
+    const { limit = 10, offset = 0 } = req.query;
+
+    const trending = db.prepare(`
+      SELECT
+        id, name, ticker,
+        COALESCE(expected_apy, 0) as expected_apy,
+        COALESCE(risk_level, 'medium') as risk_level,
+        COALESCE(min_investment, 50000) as min_investment,
+        price as current_price,
+        CASE WHEN description IS NOT NULL THEN description ELSE 'Investment opportunity' END as description,
+        CASE WHEN ticker THEN ticker ELSE 'DTV' END as icon
+      FROM stocks
+      WHERE is_active = 1
+      ORDER BY expected_apy DESC
+      LIMIT ? OFFSET ?
+    `).all(parseInt(limit), parseInt(offset));
+
+    return res.status(200).json({
+      success: true,
+      count: trending.length,
+      trending
+    });
+
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: 'Could not fetch trending stocks',
+      error: error.message
+    });
+  }
+});
+
 // GET SINGLE STOCK (must be after watchlist routes to avoid pattern matching)
 router.get('/:ticker', (req, res) => {
   try {
     const stock = db.prepare(`
-      SELECT * FROM stocks WHERE ticker = ? AND is_active = 1
+      SELECT
+        id, name, ticker, price, previous_price,
+        COALESCE(ROUND(price - previous_price, 2), 0) as change_amount,
+        COALESCE(ROUND(((price - previous_price) / previous_price * 100), 2), 0) as change_percent,
+        COALESCE(high_52w, price) as high_52w,
+        COALESCE(low_52w, price) as low_52w,
+        price as open,
+        COALESCE(high_52w * 0.95, price) as high,
+        COALESCE(low_52w * 1.05, price) as low,
+        market_cap, shares_outstanding, sector, industry, description,
+        pe_ratio, eps, dividend_yield, beta, volume, average_volume,
+        COALESCE(exchange, 'NGX') as exchange,
+        logo
+      FROM stocks
+      WHERE ticker = ? AND is_active = 1
     `).get(req.params.ticker.toUpperCase());
 
     if (!stock) {
