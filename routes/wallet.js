@@ -6,9 +6,13 @@ const { protect } = require('../middleware/auth');
 // GET WALLET BALANCE
 router.get('/', protect, (req, res) => {
   try {
-    const wallet = db.prepare(
-      'SELECT * FROM wallets WHERE user_id = ?'
-    ).get(req.user.id);
+    const wallet = db.prepare(`
+      SELECT id, user_id, balance, currency,
+      COALESCE(account_number, 'Not set') as account_number,
+      COALESCE(bank_name, 'Access Bank') as bank_name,
+      updated_at
+      FROM wallets WHERE user_id = ?
+    `).get(req.user.id);
 
     if (!wallet) {
       return res.status(404).json({
@@ -34,7 +38,7 @@ router.get('/', protect, (req, res) => {
 // DEPOSIT FUNDS
 router.post('/deposit', protect, (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, payment_method = 'bank_transfer', reference: externalRef } = req.body;
 
     if (!amount || amount <= 0) {
       return res.status(400).json({
@@ -53,23 +57,30 @@ router.post('/deposit', protect, (req, res) => {
       'UPDATE wallets SET balance = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?'
     ).run(newBalance, req.user.id);
 
-    const reference = 'DEP-' + Date.now() + '-' + req.user.id;
+    const reference = externalRef || ('DEP-' + Date.now() + '-' + req.user.id);
 
     db.prepare(`
       INSERT INTO transactions (user_id, type, amount, description, reference, status)
-      VALUES (?, 'deposit', ?, 'Wallet deposit', ?, 'completed')
-    `).run(req.user.id, amount, reference);
+      VALUES (?, 'deposit', ?, ?, ?, 'completed')
+    `).run(req.user.id, amount, `Wallet deposit via ${payment_method}`, reference);
 
     db.prepare(`
       INSERT INTO notifications (user_id, title, message)
       VALUES (?, 'Deposit Successful', ?)
-    `).run(req.user.id, `Your wallet has been credited with ₦${amount.toLocaleString()}`);
+    `).run(req.user.id, `₦${amount.toLocaleString()} has been added to your wallet`);
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
       message: `₦${amount.toLocaleString()} deposited successfully`,
-      new_balance: newBalance,
-      reference
+      new_balance: parseFloat(newBalance.toFixed(2)),
+      reference,
+      transaction: {
+        id: Date.now(),
+        type: 'deposit',
+        amount,
+        status: 'completed',
+        created_at: new Date().toISOString()
+      }
     });
 
   } catch (error) {
@@ -84,12 +95,19 @@ router.post('/deposit', protect, (req, res) => {
 // WITHDRAW FUNDS
 router.post('/withdraw', protect, (req, res) => {
   try {
-    const { amount } = req.body;
+    const { amount, destination = 'bank_account', account_number, account_name } = req.body;
 
     if (!amount || amount <= 0) {
       return res.status(400).json({
         success: false,
         message: 'Please enter a valid amount'
+      });
+    }
+
+    if (destination === 'bank_account' && !account_number) {
+      return res.status(400).json({
+        success: false,
+        message: 'Account number is required for bank transfers'
       });
     }
 
@@ -100,7 +118,7 @@ router.post('/withdraw', protect, (req, res) => {
     if (wallet.balance < amount) {
       return res.status(400).json({
         success: false,
-        message: 'Insufficient balance'
+        message: `Insufficient balance. You have ₦${wallet.balance.toLocaleString()} available`
       });
     }
 
@@ -111,22 +129,33 @@ router.post('/withdraw', protect, (req, res) => {
     ).run(newBalance, req.user.id);
 
     const reference = 'WDR-' + Date.now() + '-' + req.user.id;
+    const description = destination === 'bank_account'
+      ? `Withdrawal to ${account_name} (${account_number})`
+      : `Withdrawal to ${destination}`;
 
     db.prepare(`
       INSERT INTO transactions (user_id, type, amount, description, reference, status)
-      VALUES (?, 'withdrawal', ?, 'Wallet withdrawal', ?, 'completed')
-    `).run(req.user.id, amount, reference);
+      VALUES (?, 'withdrawal', ?, ?, ?, 'processing')
+    `).run(req.user.id, amount, description, reference);
 
     db.prepare(`
       INSERT INTO notifications (user_id, title, message)
-      VALUES (?, 'Withdrawal Successful', ?)
-    `).run(req.user.id, `₦${amount.toLocaleString()} has been withdrawn from your wallet`);
+      VALUES (?, 'Withdrawal Initiated', ?)
+    `).run(req.user.id, `₦${amount.toLocaleString()} withdrawal initiated. Will be completed in 1-3 business days`);
 
-    return res.status(200).json({
+    return res.status(201).json({
       success: true,
-      message: `₦${amount.toLocaleString()} withdrawal successful`,
-      new_balance: newBalance,
-      reference
+      message: `₦${amount.toLocaleString()} withdrawal initiated`,
+      new_balance: parseFloat(newBalance.toFixed(2)),
+      reference,
+      status: 'processing',
+      transaction: {
+        id: Date.now(),
+        type: 'withdrawal',
+        amount,
+        status: 'processing',
+        created_at: new Date().toISOString()
+      }
     });
 
   } catch (error) {
@@ -141,15 +170,38 @@ router.post('/withdraw', protect, (req, res) => {
 // GET TRANSACTION HISTORY
 router.get('/transactions', protect, (req, res) => {
   try {
-    const transactions = db.prepare(`
-      SELECT * FROM transactions
-      WHERE user_id = ?
-      ORDER BY created_at DESC
-    `).all(req.user.id);
+    const { type = 'all', limit = 20, offset = 0, start_date, end_date } = req.query;
+
+    let query = `SELECT * FROM transactions WHERE user_id = ?`;
+    const params = [req.user.id];
+
+    if (type !== 'all') {
+      query += ` AND type = ?`;
+      params.push(type);
+    }
+
+    if (start_date) {
+      query += ` AND created_at >= ?`;
+      params.push(start_date);
+    }
+
+    if (end_date) {
+      query += ` AND created_at <= ?`;
+      params.push(end_date + ' 23:59:59');
+    }
+
+    query += ` ORDER BY created_at DESC LIMIT ? OFFSET ?`;
+    params.push(parseInt(limit), parseInt(offset));
+
+    const transactions = db.prepare(query).all(...params);
+
+    const countQuery = `SELECT COUNT(*) as total FROM transactions WHERE user_id = ?`;
+    const countResult = db.prepare(countQuery).get(req.user.id);
 
     return res.status(200).json({
       success: true,
       count: transactions.length,
+      total_count: countResult.total,
       transactions
     });
 
