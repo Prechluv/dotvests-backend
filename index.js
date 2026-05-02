@@ -14,6 +14,8 @@ const walletRoutes = require('./routes/wallet');
 const portfolioRoutes = require('./routes/portfolio');
 const adminRoutes = require('./routes/admin');
 const paymentRoutes = require('./routes/payment');
+const waitlistRoutes = require('./routes/waitlist');
+const contactRoutes = require('./routes/contact');
 
 const app = express();
 
@@ -45,6 +47,8 @@ app.use('/api/wallet', walletRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/payment', paymentRoutes);
+app.use('/api/waitlist', waitlistRoutes);
+app.use('/api/contact', contactRoutes);
 
 app.get('/', function(req, res) {
   res.json({
@@ -60,7 +64,9 @@ app.get('/', function(req, res) {
       wallet: '/api/wallet',
       portfolio: '/api/portfolio',
       admin: '/api/admin',
-      payment: '/api/payment'
+      payment: '/api/payment',
+      waitlist: '/api/waitlist',
+      contact: '/api/contact'
     }
   });
 });
