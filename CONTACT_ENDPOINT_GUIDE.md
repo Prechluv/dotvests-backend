@@ -558,7 +558,7 @@ When a new contact message is submitted, the system automatically sends an email
 ```env
 # Comma-separated list of admin emails
 ADMIN_EMAILS=contact@dotvests.com,admin@dotvests.com,support@dotvests.com
-ADMIN_DASHBOARD_URL=http://localhost:3000/admin
+ADMIN_DASHBOARD_URL=https://dotvests.com/admin
 ```
 
 2. **Required Environment Variables:**
