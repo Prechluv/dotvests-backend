@@ -2,6 +2,36 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
+// Helper function to send waitlist notification email
+const sendWaitlistNotification = async (waitlistData) => {
+  try {
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    const notificationEmail = process.env.WAITLIST_NOTIFICATION_EMAIL || process.env.ADMIN_EMAILS?.split(',')[0];
+    if (!notificationEmail) return; // Skip if no email configured
+
+    const emailTemplate = `
+      <h2>New Waitlist Signup</h2>
+      <p><strong>Email:</strong> <a href="mailto:${waitlistData.email}">${waitlistData.email}</a></p>
+      <p><strong>Source:</strong> ${waitlistData.source}</p>
+      <p><strong>Joined:</strong> ${new Date().toISOString()}</p>
+      <hr>
+      <p><strong>Waitlist ID:</strong> ${waitlistData.waitlist_id}</p>
+    `;
+
+    await sgMail.send({
+      to: notificationEmail,
+      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@dotvests.com',
+      subject: `New Waitlist Signup: ${waitlistData.email}`,
+      html: emailTemplate
+    });
+  } catch (error) {
+    // Log error but don't fail the user's request
+    console.error('Failed to send waitlist notification:', error.message);
+  }
+};
+
 // JOIN WAITLIST
 router.post('/join', (req, res) => {
   try {
@@ -41,6 +71,13 @@ router.post('/join', (req, res) => {
       INSERT INTO waitlist (email, source, status)
       VALUES (?, ?, 'pending')
     `).run(email.toLowerCase(), source);
+
+    // Send notification email (async, doesn't block response)
+    sendWaitlistNotification({
+      email: email.toLowerCase(),
+      source: source,
+      waitlist_id: result.lastInsertRowid
+    });
 
     return res.status(201).json({
       success: true,
