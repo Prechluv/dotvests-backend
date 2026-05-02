@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
-// Helper function to send waitlist notification email
+// Helper function to send waitlist notification to admins
 const sendWaitlistNotification = async (waitlistData) => {
   try {
     const sgMail = require('@sendgrid/mail');
@@ -29,6 +29,86 @@ const sendWaitlistNotification = async (waitlistData) => {
   } catch (error) {
     // Log error but don't fail the user's request
     console.error('Failed to send waitlist notification:', error.message);
+  }
+};
+
+// Helper function to send welcome email to subscriber
+const sendSubscriberWelcomeEmail = async (email) => {
+  try {
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    const emailTemplate = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8">
+        <style>
+          body { font-family: Arial, sans-serif; line-height: 1.6; color: #333; }
+          .container { max-width: 600px; margin: 0 auto; padding: 20px; }
+          .header { text-align: center; margin-bottom: 30px; }
+          .logo { font-size: 24px; font-weight: bold; color: #007AFF; }
+          .content { background: #f9f9f9; padding: 20px; border-radius: 8px; margin: 20px 0; }
+          .benefits { list-style-position: inside; margin: 15px 0; }
+          .benefits li { margin: 10px 0; }
+          .footer { text-align: center; margin-top: 30px; font-size: 12px; color: #666; }
+          .disclaimer { background: #f0f0f0; padding: 15px; border-radius: 8px; margin: 20px 0; font-size: 12px; color: #555; }
+          .signature { margin-top: 20px; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <div class="header">
+            <div class="logo">Dotvests</div>
+            <p style="color: #666; margin: 5px 0;">Building Wealth Through Technology</p>
+          </div>
+
+          <h2>Thank You for Subscribing to Dotvests</h2>
+
+          <p>Hi ${email},</p>
+
+          <p>Thank you for subscribing to Dotvests Technologies. We truly appreciate you taking this step towards your financial future.</p>
+
+          <div class="content">
+            <h3>Here's what you stand to gain as a subscriber:</h3>
+            <ul class="benefits">
+              <li><strong>Early access</strong> to emerging investment opportunities</li>
+              <li><strong>Practical tips</strong> to grow and manage your wealth (financial literacy)</li>
+              <li><strong>Exclusive news and updates</strong> on blockchain technology and the Web3 ecosystem</li>
+              <li><strong>Timely insights</strong> on African and global stock markets</li>
+              <li><strong>Curated intelligence</strong> to help you make informed financial decisions</li>
+            </ul>
+          </div>
+
+          <p>We're here to help you move from <strong>earning to building lasting wealth</strong>.</p>
+
+          <div class="disclaimer">
+            <strong>Disclaimer:</strong> DotVests is currently in pre-launch phase. No investment services are offered at this time. All content is for informational purposes only.
+          </div>
+
+          <div class="signature">
+            <p>Warm regards,</p>
+            <p><strong>The Dotvests Team</strong></p>
+          </div>
+
+          <div class="footer">
+            <p>© 2026 Dotvests Technologies. All rights reserved.</p>
+            <p>You received this email because you subscribed to our waitlist.</p>
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+    await sgMail.send({
+      to: email,
+      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@dotvests.com',
+      subject: 'Thank You for Subscribing to Dotvests',
+      html: emailTemplate
+    });
+  } catch (error) {
+    // Log error but don't fail the user's request
+    console.error('Failed to send welcome email:', error.message);
   }
 };
 
@@ -72,12 +152,15 @@ router.post('/join', (req, res) => {
       VALUES (?, ?, 'pending')
     `).run(email.toLowerCase(), source);
 
-    // Send notification email (async, doesn't block response)
+    // Send admin notification email (async, doesn't block response)
     sendWaitlistNotification({
       email: email.toLowerCase(),
       source: source,
       waitlist_id: result.lastInsertRowid
     });
+
+    // Send welcome email to subscriber (async, doesn't block response)
+    sendSubscriberWelcomeEmail(email.toLowerCase());
 
     return res.status(201).json({
       success: true,
