@@ -548,6 +548,146 @@
           }
         }
       ]
+    },
+    {
+      "name": "Waitlist",
+      "item": [
+        {
+          "name": "Join Waitlist",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"source\": \"landing_page\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/waitlist/join",
+              "host": ["{{base_url}}"],
+              "path": ["api", "waitlist", "join"]
+            }
+          }
+        },
+        {
+          "name": "Get Waitlist Count",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/waitlist/count",
+              "host": ["{{base_url}}"],
+              "path": ["api", "waitlist", "count"]
+            }
+          }
+        },
+        {
+          "name": "Check Waitlist Status",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/waitlist/check",
+              "host": ["{{base_url}}"],
+              "path": ["api", "waitlist", "check"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Contact",
+      "item": [
+        {
+          "name": "Submit Contact Form",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"subject\": \"Product Inquiry\",\n  \"message\": \"I have a question about your investment platform...\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/contact/submit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contact", "submit"]
+            }
+          }
+        },
+        {
+          "name": "Get Contact Messages (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/contact/messages?status=all&limit=50&offset=0",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contact", "messages"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "all"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "offset",
+                  "value": "0"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Mark Message as Read (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/contact/messages/1/read",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contact", "messages", "1", "read"]
+            }
+          }
+        },
+        {
+          "name": "Delete Contact Message (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/contact/messages/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "contact", "messages", "1"]
+            }
+          }
+        }
+      ]
     }
   ],
   "variable": [

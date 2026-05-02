@@ -692,6 +692,9 @@ const removeFromWatchlist = async (stockId) => {
 
 ---
 
+
+---
+
 ### ⚡ ORDERS
 
 #### Place Order (Buy/Sell)
