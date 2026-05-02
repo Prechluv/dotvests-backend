@@ -83,40 +83,55 @@ router.get('/verify/:reference', protect, async (req, res) => {
       });
     }
 
-    const existing = db.prepare(
-      'SELECT * FROM transactions WHERE reference = ? AND status = ?'
-    ).get(reference, 'completed');
-
-    if (existing) {
-      return res.status(400).json({
-        success: false,
-        message: 'Transaction already processed'
-      });
-    }
-
     const amountInNaira = amount / 100;
 
-    const wallet = db.prepare(
-      'SELECT * FROM wallets WHERE user_id = ?'
-    ).get(req.user.id);
+    try {
+      const result = db.transaction(() => {
+        const existing = db.prepare(
+          'SELECT * FROM transactions WHERE reference = ? AND status = ?'
+        ).get(reference, 'completed');
 
-    db.prepare(
-      'UPDATE wallets SET balance = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?'
-    ).run(wallet.balance + amountInNaira, req.user.id);
+        if (existing) {
+          throw new Error('Transaction already processed');
+        }
 
-    db.prepare(
-      'UPDATE transactions SET status = ? WHERE reference = ?'
-    ).run('completed', reference);
+        const wallet = db.prepare(
+          'SELECT * FROM wallets WHERE user_id = ?'
+        ).get(req.user.id);
 
-    db.prepare(
-      'INSERT INTO notifications (user_id, title, message) VALUES (?, \'Deposit Successful\', ?)'
-    ).run(req.user.id, `₦${amountInNaira.toLocaleString()} has been added to your DotVests wallet`);
+        if (!wallet) {
+          throw new Error('Wallet not found');
+        }
 
-    return res.status(200).json({
-      success: true,
-      message: `₦${amountInNaira.toLocaleString()} deposited successfully`,
-      new_balance: wallet.balance + amountInNaira
-    });
+        db.prepare(
+          'UPDATE wallets SET balance = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?'
+        ).run(wallet.balance + amountInNaira, req.user.id);
+
+        db.prepare(
+          'UPDATE transactions SET status = ? WHERE reference = ?'
+        ).run('completed', reference);
+
+        db.prepare(
+          'INSERT INTO notifications (user_id, title, message) VALUES (?, \'Deposit Successful\', ?)'
+        ).run(req.user.id, `₦${amountInNaira.toLocaleString()} has been added to your DotVests wallet`);
+
+        return wallet.balance + amountInNaira;
+      })();
+
+      return res.status(200).json({
+        success: true,
+        message: `₦${amountInNaira.toLocaleString()} deposited successfully`,
+        new_balance: result
+      });
+    } catch (txError) {
+      if (txError.message === 'Transaction already processed') {
+        return res.status(400).json({
+          success: false,
+          message: 'Transaction already processed'
+        });
+      }
+      throw txError;
+    }
 
   } catch (error) {
     return res.status(500).json({
@@ -127,54 +142,36 @@ router.get('/verify/:reference', protect, async (req, res) => {
   }
 });
 
-router.post('/webhook', async (req, res) => {
+router.get('/banks', async (req, res) => {
   try {
-    const secret = process.env.PAYSTACK_SECRET_KEY;
-    const hash = require('crypto')
-      .createHmac('sha512', secret)
-      .update(JSON.stringify(req.body))
-      .digest('hex');
-
-    if (hash !== req.headers['x-paystack-signature']) {
-      return res.status(401).json({ message: 'Invalid signature' });
-    }
-
-    const { event, data } = req.body;
-
-    if (event === 'charge.success') {
-      const { reference, amount, metadata } = data;
-      const user_id = metadata.user_id;
-      const amountInNaira = amount / 100;
-
-      const existing = db.prepare(
-        'SELECT * FROM transactions WHERE reference = ? AND status = ?'
-      ).get(reference, 'completed');
-
-      if (!existing) {
-        const wallet = db.prepare(
-          'SELECT * FROM wallets WHERE user_id = ?'
-        ).get(user_id);
-
-        if (wallet) {
-          db.prepare(
-            'UPDATE wallets SET balance = ?, updated_at = CURRENT_TIMESTAMP WHERE user_id = ?'
-          ).run(wallet.balance + amountInNaira, user_id);
-
-          db.prepare(
-            'UPDATE transactions SET status = ? WHERE reference = ?'
-          ).run('completed', reference);
-
-          db.prepare(
-            'INSERT INTO notifications (user_id, title, message) VALUES (?, \'Deposit Successful\', ?)'
-          ).run(user_id, amountInNaira + ' has been added to your DotVests wallet');
+    const response = await axios.get(
+      'https://api.paystack.co/bank?currency=NGN',
+      {
+        headers: {
+          Authorization: 'Bearer ' + process.env.PAYSTACK_SECRET_KEY
         }
       }
-    }
+    );
 
-    return res.status(200).json({ received: true });
+    const banks = response.data.data.map(bank => ({
+      id: bank.id,
+      code: bank.code,
+      name: bank.name
+    }));
+
+    return res.status(200).json({
+      success: true,
+      message: 'Banks retrieved successfully',
+      data: banks,
+      count: banks.length
+    });
 
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({
+      success: false,
+      message: 'Could not fetch banks',
+      error: error.message
+    });
   }
 });
 
