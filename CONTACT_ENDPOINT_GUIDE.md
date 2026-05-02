@@ -548,23 +548,102 @@ CREATE TABLE contact_messages (
 
 ---
 
+## Admin Notifications
+
+When a new contact message is submitted, the system automatically sends an email notification to all configured admin emails.
+
+### Setup Instructions
+
+1. **Configure Admin Emails** in your `.env` file:
+```env
+# Comma-separated list of admin emails
+ADMIN_EMAILS=admin@dotvests.com,support@dotvests.com
+ADMIN_DASHBOARD_URL=http://localhost:3000/admin
+```
+
+2. **Required Environment Variables:**
+   - `SENDGRID_API_KEY` - Your SendGrid API key
+   - `SENDGRID_FROM_EMAIL` - The email address messages are sent from
+   - `ADMIN_EMAILS` - Comma-separated list of admin email addresses
+
+3. **Email Notification Features:**
+   - Automatically triggered when a contact form is submitted
+   - Includes sender name, email, subject, and full message
+   - Links to admin dashboard for quick access
+   - Doesn't block the user's request (asynchronous)
+
+### Email Notification Example
+
+**Admin receives:**
+```
+Subject: New Contact: Product Inquiry
+
+From: Jane Smith
+Email: jane@example.com
+
+Message:
+I would like to request a feature for portfolio analysis...
+
+View in Dashboard: http://localhost:3000/admin/contact
+```
+
+---
+
 ## Best Practices
 
 1. **Client-side Validation:** Validate form fields before submission
 2. **Rate Limiting:** Consider implementing rate limiting to prevent spam
-3. **Email Notifications:** Configure SendGrid to send notification emails when new messages arrive
+3. **Email Notifications:** ✅ Already configured - admins receive notifications automatically
 4. **Admin Dashboard:** Create an admin dashboard to manage and respond to contact submissions
 5. **Response Tracking:** Track which messages have been responded to using the status field
 6. **Data Privacy:** Ensure compliance with GDPR and other data protection regulations
+7. **Multiple Admin Emails:** Configure multiple email addresses to ensure someone sees every message
+
+---
+
+## How Admin Notifications Work
+
+### Notification Flow
+
+```
+User submits contact form
+    ↓
+Message saved to database
+    ↓
+Admin notification email triggered (async)
+    ↓
+Email sent to all ADMIN_EMAILS
+    ↓
+User receives success response (doesn't wait for email)
+```
+
+### What Happens If Configuration is Missing
+
+- If `ADMIN_EMAILS` is not set → Notifications silently skip (no errors, no notifications sent)
+- If `SENDGRID_API_KEY` is not set → Email sending fails gracefully without affecting user request
+- If `SENDGRID_FROM_EMAIL` is not set → Uses default: `noreply@dotvests.com`
+
+This ensures form submissions always succeed even if email notifications fail.
+
+### Monitoring Email Delivery
+
+To verify emails are being sent:
+
+1. Check SendGrid Dashboard: https://app.sendgrid.com/statistics
+2. Monitor admin email inbox for new messages
+3. Enable logging in production to track failed email attempts
+4. Consider setting up email delivery webhooks in SendGrid
 
 ---
 
 ## Future Enhancements
 
-- Add email notification to admins when new messages arrive
 - Auto-reply with confirmation email to users
 - Category/type field for better organization
 - Admin response tracking and reply history
 - Attachment support for additional documents
 - Admin authentication requirement
 - Message search functionality
+- Webhook integration for external services
+- SMS alerts for critical inquiries
+- Automatic ticket/case management integration

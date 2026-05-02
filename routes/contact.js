@@ -2,6 +2,40 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 
+// Helper function to send admin notification email
+const sendAdminNotification = async (contactData) => {
+  try {
+    const sgMail = require('@sendgrid/mail');
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    const adminEmails = process.env.ADMIN_EMAILS ? process.env.ADMIN_EMAILS.split(',') : [];
+    if (adminEmails.length === 0) return; // Skip if no admin emails configured
+
+    const emailTemplate = `
+      <h2>New Contact Form Submission</h2>
+      <p><strong>From:</strong> ${contactData.full_name}</p>
+      <p><strong>Email:</strong> <a href="mailto:${contactData.email}">${contactData.email}</a></p>
+      <p><strong>Subject:</strong> ${contactData.subject}</p>
+      <hr>
+      <p><strong>Message:</strong></p>
+      <p>${contactData.message.replace(/\n/g, '<br>')}</p>
+      <hr>
+      <p><small>Submitted at: ${new Date().toISOString()}</small></p>
+      <p><a href="${process.env.ADMIN_DASHBOARD_URL || 'http://localhost:3000'}/admin/contact">View in Dashboard</a></p>
+    `;
+
+    await sgMail.sendMultiple({
+      to: adminEmails,
+      from: process.env.SENDGRID_FROM_EMAIL || 'noreply@dotvests.com',
+      subject: `New Contact: ${contactData.subject}`,
+      html: emailTemplate
+    });
+  } catch (error) {
+    // Log error but don't fail the user's request
+    console.error('Failed to send admin notification:', error.message);
+  }
+};
+
 // SUBMIT CONTACT MESSAGE
 router.post('/submit', (req, res) => {
   try {
@@ -50,6 +84,15 @@ router.post('/submit', (req, res) => {
       INSERT INTO contact_messages (full_name, email, subject, message, status)
       VALUES (?, ?, ?, ?, 'unread')
     `).run(full_name.trim(), email.toLowerCase(), subject.trim(), message.trim());
+
+    // Send admin notification (async, doesn't block response)
+    sendAdminNotification({
+      full_name: full_name.trim(),
+      email: email.toLowerCase(),
+      subject: subject.trim(),
+      message: message.trim(),
+      contact_id: result.lastInsertRowid
+    });
 
     return res.status(201).json({
       success: true,
