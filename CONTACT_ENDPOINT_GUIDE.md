@@ -557,7 +557,7 @@ When a new contact message is submitted, the system automatically sends an email
 1. **Configure Admin Emails** in your `.env` file:
 ```env
 # Comma-separated list of admin emails
-ADMIN_EMAILS=admin@dotvests.com,support@dotvests.com
+ADMIN_EMAILS=contact@dotvests.com,admin@dotvests.com,support@dotvests.com
 ADMIN_DASHBOARD_URL=http://localhost:3000/admin
 ```
 
